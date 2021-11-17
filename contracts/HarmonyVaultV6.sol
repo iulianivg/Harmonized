@@ -27,6 +27,8 @@ contract HarmonyVaultV6 is ERC20, Ownable, ReentrancyGuard {
         uint proposedTime;
     }
 
+    
+
     // The last proposed strategy to switch to.
     StratCandidate public stratCandidate;
     // The strategy currently in use by the vault.
@@ -34,8 +36,11 @@ contract HarmonyVaultV6 is ERC20, Ownable, ReentrancyGuard {
     // The minimum time it has to pass before a strat candidate can be approved.
     uint256 public immutable approvalDelay;
 
-    event NewStratCandidate(address implementation);
-    event UpgradeStrat(address implementation);
+    event NewStratCandidate(address indexed implementation);
+    event UpgradeStrat(address indexed implementation);
+    event Deposit(uint256 _time, address indexed _who);
+    event Withdraw(uint256 _time, address indexed _who);
+    event Earn(uint256 _time, uint _amount);
 
     /**
      * @dev Sets the value of {token} to the token that the vault will
@@ -87,7 +92,7 @@ contract HarmonyVaultV6 is ERC20, Ownable, ReentrancyGuard {
      * @dev Function for various UIs to display the current value of one of our yield tokens.
      * Returns an uint256 with 18 decimals of how much underlying asset one vault share represents.
      */
-    function getPricePerFullShare() public view returns (uint256) {
+    function getPricePerFullShare() external view returns (uint256) {
         return totalSupply() == 0 ? 1e18 : balance().mul(1e18).div(totalSupply());
     }
 
@@ -117,6 +122,7 @@ contract HarmonyVaultV6 is ERC20, Ownable, ReentrancyGuard {
             shares = (_amount.mul(totalSupply())).div(_pool);
         }
         _mint(msg.sender, shares);
+        emit Deposit(block.timestamp, msg.sender);
     }
 
     /**
@@ -127,6 +133,7 @@ contract HarmonyVaultV6 is ERC20, Ownable, ReentrancyGuard {
         uint _bal = available();
         want().safeTransfer(address(strategy), _bal);
         strategy.deposit();
+        emit Earn(block.timestamp, _bal);
     }
 
     /**
@@ -157,13 +164,14 @@ contract HarmonyVaultV6 is ERC20, Ownable, ReentrancyGuard {
         }
 
         want().safeTransfer(msg.sender, r);
+        emit Withdraw(block.timestamp, msg.sender);
     }
 
     /** 
      * @dev Sets the candidate for the new strat to use with this vault.
      * @param _implementation The address of the candidate strategy.  
      */
-    function proposeStrat(address _implementation) public onlyOwner {
+    function proposeStrat(address _implementation) external onlyOwner {
         require(address(this) == IStrategy(_implementation).vault(), "Proposal not valid for this Vault");
         stratCandidate = StratCandidate({
             implementation: _implementation,
@@ -179,7 +187,7 @@ contract HarmonyVaultV6 is ERC20, Ownable, ReentrancyGuard {
      * happening in +100 years for safety. 
      */
 
-    function upgradeStrat() public onlyOwner {
+    function upgradeStrat() external onlyOwner {
         require(stratCandidate.implementation != address(0), "There is no candidate");
         require(stratCandidate.proposedTime.add(approvalDelay) < block.timestamp, "Delay has not passed");
 

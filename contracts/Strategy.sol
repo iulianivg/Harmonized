@@ -11,7 +11,7 @@ import './access/Ownable.sol';
 
 
 
-pragma solidity >=0.6.0 <0.8.0;
+pragma solidity 0.6.12;
 
 
 /**
@@ -159,6 +159,7 @@ contract StratManager is Ownable, Pausable {
      * @param _keeper new keeper address.
      */
     function setKeeper(address _keeper) external onlyManager {
+        require(_keeper != address(0x0), "wrong address");
         keeper = _keeper;
     }
 
@@ -176,6 +177,7 @@ contract StratManager is Ownable, Pausable {
      * @param _unirouter new unirouter address.
      */
     function setUnirouter(address _unirouter) external onlyOwner {
+        require(_unirouter != address(0x0), "wrong address");
         unirouter = _unirouter;
     }
 
@@ -184,6 +186,7 @@ contract StratManager is Ownable, Pausable {
      * @param _vault new vault address.
      */
     function setVault(address _vault) external onlyOwner {
+        require(_vault != address(0x0), "wrong address");
         vault = _vault;
     }
 
@@ -192,6 +195,7 @@ contract StratManager is Ownable, Pausable {
      * @param _beefyFeeRecipient new beefy fee recipient address.
      */
     function setBeefyFeeRecipient(address _beefyFeeRecipient) external onlyOwner {
+        require(_beefyFeeRecipient != address(0x0), "wrong address");
         beefyFeeRecipient = _beefyFeeRecipient;
     }
 
@@ -271,6 +275,9 @@ contract StrategyBanana is StratManager, FeeManager {
      */
     event StratHarvest(address indexed harvester);
 
+    event Deposit(uint256 _time);
+    event Withdraw(uint256 _time);
+
     constructor(
         address _want,
         address _chef,
@@ -300,6 +307,7 @@ contract StrategyBanana is StratManager, FeeManager {
         if (wantBal > 0) {
             IMasterChef(chef).enterStaking(wantBal);
         }
+        emit Depost(block.timestamp);
     }
 
     function withdraw(uint256 _amount) external {
@@ -316,12 +324,13 @@ contract StrategyBanana is StratManager, FeeManager {
             wantBal = _amount;
         }
 
-        if (tx.origin == owner() || paused()) {
+        if (msg.sender == owner() || paused()) {
             IERC20(want).safeTransfer(vault, wantBal);
         } else {
             uint256 withdrawalFeeAmount = wantBal.mul(withdrawalFee).div(WITHDRAWAL_MAX);
             IERC20(want).safeTransfer(vault, wantBal.sub(withdrawalFeeAmount));
         }
+        emit Withdraw(block.timestamp);
     }
 
     function beforeDeposit() external override {
@@ -395,7 +404,7 @@ contract StrategyBanana is StratManager, FeeManager {
     }
 
     // pauses deposits and withdraws all funds from third party systems.
-    function panic() public onlyManager {
+    function panic() external onlyManager {
         pause();
         IMasterChef(chef).emergencyWithdraw(poolId);
     }
