@@ -155,7 +155,7 @@ contract HarmonyVaultV6 is ERC20, Ownable, ReentrancyGuard {
         uint b = want().balanceOf(address(this));
         if (b < r) {
             uint _withdraw = r.sub(b);
-            strategy.withdraw(_withdraw);
+            strategy.withdraw(_withdraw, msg.sender);
             uint _after = want().balanceOf(address(this));
             uint _diff = _after.sub(b);
             if (_diff < _withdraw) {

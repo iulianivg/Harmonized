@@ -310,7 +310,7 @@ contract StrategyBanana is StratManager, FeeManager {
         emit Depost(block.timestamp);
     }
 
-    function withdraw(uint256 _amount) external {
+    function withdraw(uint256 _amount, address _caller) external {
         require(msg.sender == vault, "!vault");
 
         uint256 wantBal = balanceOfWant();
@@ -324,7 +324,7 @@ contract StrategyBanana is StratManager, FeeManager {
             wantBal = _amount;
         }
 
-        if (msg.sender == owner() || paused()) {
+        if (_caller == owner() || paused()) {
             IERC20(want).safeTransfer(vault, wantBal);
         } else {
             uint256 withdrawalFeeAmount = wantBal.mul(withdrawalFee).div(WITHDRAWAL_MAX);

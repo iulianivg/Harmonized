@@ -6,7 +6,7 @@ interface IStrategy {
     function want() external view returns (IERC20);
     function beforeDeposit() external;
     function deposit() external;
-    function withdraw(uint256) external;
+    function withdraw(uint256, address) external;
     function balanceOf() external view returns (uint256);
     function balanceOfWant() external view returns (uint256);
     function balanceOfPool() external view returns (uint256);
